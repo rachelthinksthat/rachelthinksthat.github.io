@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drops From The Heavens | Rachel Jordan</title>
+<meta name="description" content="A creation myth for fire and rain.">
+<meta property="og:title" content="Drops From The Heavens | Rachel Jordan">
+<meta property="og:description" content="A creation myth for fire and rain.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%232a43c4'/%3E%3Ctext x='16' y='22' font-family='Arial' font-weight='700' font-size='15' fill='white' text-anchor='middle'%3ERJ%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&family=Average&family=Courier+Prime&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="name" href="index.html">Rachel Jordan</a>
+    <nav class="tabs" aria-label="Pages">
+      <a href="index.html">Home</a>
+      <a href="campaigns.html">Campaigns</a>
+      <a href="publishing.html">Publishing</a>
+      <a href="research.html">Research</a>
+      <a href="creative.html" aria-current="page">Creative Writing</a>
+      <a href="about.html">About</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+
+  <article class="article">
+    <a class="back" href="creative.html">&larr; Creative Writing</a>
+    <header class="art-head">
+      <p class="label">Prose poem · LSU</p>
+      <h1>Drops From The Heavens</h1>
+      
+    </header>
+    <div class="essay"><p>On a day that no one remembers, hot fire blew up from the ground. A strike of light out of the heavens set a spark that grew and grew. As the flame curled up to the sky in search of a kiss from the great expanse, warmth coursed through space giving comfort to an empty wasteland. A completeness the sky had never felt washed through on the breeze. The heavens looked down at the glimmering light smiling with ease. Reaching needing to embrace the sight to capture its affection, but the sky could only touch the earth in little drops of heaven. The heavens poured pieces to the ground to please the fire that blazed, as they rained down the brilliant light fluttered and flickered delighted. The more heaven that came the less light there was until there was no more, and then heavens cried out with a thundery shout for all the night to mourn.</p></div>
+  </article>
+
+  <section class="more"><p class="label">More work</p><div class="cards"><a class="card" href="nasa-ghosts.html"><blockquote class="card-quote"><span class="q">So there I was flying along, minding my own business</span></blockquote><p class="label">Tabloid tall tale · LSU</p><h3>NASA Takes Photo Of Ghosts In Space</h3><p>A tabloid tall tale told from deep space.</p><span class="go">Read more &rarr;</span></a><a class="card" href="mr-o-wellington.html"><blockquote class="card-quote"><span class="q">Mr. O Wellington lives in an old rickety house on the dead end of Everett Drive.</span></blockquote><p class="label">Character profile · LSU</p><h3>Mr. O Wellington</h3><p>A character profile of a man who moved to the most haunted road in town on purpose.</p><span class="go">Read more &rarr;</span></a></div></section>
+  <footer>
+    <div class="contact">
+      <a href="mailto:racheljordancw@gmail.com">racheljordancw@gmail.com</a>
+      <a href="https://www.linkedin.com/in/rachel-jordan-b923b5100/" target="_blank" rel="noopener">LinkedIn</a>
+      <a href="files/Rachel-Jordan-Portfolio.pdf">Portfolio PDF</a>
+    </div>
+    <p class="meta">London · Eligible to work in the UK</p>
+  </footer>
+</main>
+<dialog id="lightbox" aria-label="Enlarged image"><img id="lb-img" alt=""><p id="lb-cap"></p></dialog>
+<script>
+(function () {
+  var dlg = document.getElementById('lightbox'), img = document.getElementById('lb-img'), cap = document.getElementById('lb-cap');
+  document.querySelectorAll('button.shot').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var src = b.querySelector('img'); img.src = src.src; img.alt = src.alt;
+      var fc = b.closest('figure').querySelector('figcaption');
+      cap.textContent = (fc ? fc.textContent + '  ' : '') + '(click to close)';
+      if (dlg.showModal) dlg.showModal();
+    });
+  });
+  dlg.addEventListener('click', function () { dlg.close(); });
+  document.querySelectorAll('.carousel').forEach(function (c) {
+    var track = c.querySelector('.track'), slides = c.querySelectorAll('.slide'), dots = c.querySelectorAll('.dot'), count = c.querySelector('.count'), i = 0, n = slides.length;
+    function go(k) {
+      i = (k + n) % n; track.style.transform = 'translateX(' + (-100 * i) + '%)';
+      dots.forEach(function (d, j) { d.classList.toggle('on', j === i); });
+      slides.forEach(function (s, j) { s.setAttribute('aria-hidden', j === i ? 'false' : 'true'); s.querySelector('button').tabIndex = j === i ? 0 : -1; });
+      count.textContent = (i + 1) + ' / ' + n;
+    }
+    c.querySelector('.prev').addEventListener('click', function () { go(i - 1); });
+    c.querySelector('.next').addEventListener('click', function () { go(i + 1); });
+    c.addEventListener('keydown', function (e) { if (e.key === 'ArrowLeft') go(i - 1); if (e.key === 'ArrowRight') go(i + 1); });
+    var x0 = null;
+    c.addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+    c.addEventListener('touchend', function (e) { if (x0 === null) return; var dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) go(dx < 0 ? i + 1 : i - 1); x0 = null; });
+    go(0);
+  });
+  document.querySelectorAll('.rail').forEach(function (r) {
+    var t = r.querySelector('.rail-track'), p = r.querySelector('.rprev'), n = r.querySelector('.rnext');
+    function step() { var c = t.querySelector('.card'); return c ? c.getBoundingClientRect().width + parseFloat(getComputedStyle(t).columnGap || 0) : t.clientWidth; }
+    function upd() { var max = t.scrollWidth - t.clientWidth - 2; r.classList.toggle('static', max <= 0); p.disabled = t.scrollLeft <= 2; n.disabled = t.scrollLeft >= max; }
+    p.addEventListener('click', function () { t.scrollBy({ left: -step(), behavior: 'smooth' }); });
+    n.addEventListener('click', function () { t.scrollBy({ left: step(), behavior: 'smooth' }); });
+    t.addEventListener('scroll', function () { window.requestAnimationFrame(upd); }, { passive: true });
+    window.addEventListener('resize', upd); upd();
+  });
+  function fitQuotes() {
+    document.querySelectorAll('.card-quote').forEach(function (q) {
+      var s = q.querySelector('.q'); if (!s || !q.clientWidth) return;
+      var cs = getComputedStyle(q), availH = q.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+      var lo = 13, hi = Math.min(76, q.clientWidth * 0.105);
+      while (hi - lo > 0.5) { var m = (lo + hi) / 2; s.style.fontSize = m + 'px';
+        if (s.offsetHeight <= availH && s.scrollWidth <= s.clientWidth + 1) lo = m; else hi = m; }
+      s.style.fontSize = lo + 'px';
+    });
+  }
+  fitQuotes();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitQuotes);
+  var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(fitQuotes, 120); });
+})();
+</script>
+</body>
+</html>
