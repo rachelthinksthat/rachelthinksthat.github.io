@@ -281,3 +281,9 @@ ol.posts blockquote { margin: 0; padding-left: 0.9rem; border-left: 2px solid va
 .live-links a { font: 500 0.875rem/1.3 var(--mono); color: var(--accent); }
 
 .archive { max-width: 52rem; }
+
+.videos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; }
+.videos figure { margin: 0; display: grid; gap: 0.5rem; }
+.videos video { width: 100%; aspect-ratio: 9 / 16; object-fit: cover; background: #111; border-radius: 3px; display: block; }
+.videos figcaption { font: 400 0.8125rem/1.45 var(--mono); color: var(--muted); }
+@media (max-width: 760px) { .videos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
