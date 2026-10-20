@@ -423,3 +423,18 @@ html.drawing .inkbg .grain { animation: none; }
   .rj-controls button { min-height: 30px; padding: 0 0.6rem; font-size: 0.6rem; opacity: 0.85; }
   .hero .hint { position: static; margin-top: 0.8rem; }
 }
+
+/* the cover runs the full width of the window; the text keeps to the reading column */
+html, body { overflow-x: clip; }
+.hero { width: 100vw; margin-left: calc(50% - 50vw); margin-right: 0; padding-left: max(1.25rem, calc(50vw - 35rem)); padding-right: max(1.25rem, calc(50vw - 35rem)); border-radius: 0; }
+.hero .hint { left: max(1.25rem, calc(50vw - 35rem)); }
+
+/* results rows: centred */
+.figures div { align-items: center; text-align: center; padding-inline: 1rem; }
+.figures b { align-self: center; }
+.figures + .meta, .figures + p.meta { text-align: center; }
+.figures div { justify-content: center; padding: 1.3rem 1rem 1.4rem; }
+.figures div + div { padding-left: 1rem; }
+.figures { display: flex; }
+.figures div { flex: 1 1 0; min-width: 0; }
+@media (max-width: 620px) { .figures { flex-wrap: wrap; } .figures div { flex: 1 1 45%; } }
