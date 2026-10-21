@@ -400,7 +400,7 @@ body.turning { overflow: hidden; }
 .hero h1 { font-size: clamp(3.2rem, 8.5vw, 6.4rem); }
 .hero .portrait { height: 100%; display: flex; align-items: stretch; justify-content: flex-end; min-height: 0; }
 .hero .portrait svg.sketch { height: 100%; width: auto; max-width: 100%; aspect-ratio: 1150 / 1438; }
-@media (max-width: 860px) { .hero { grid-template-columns: 1fr; } .hero .portrait { height: auto; } .hero .portrait svg.sketch { width: 100%; height: auto; } }
+@media (max-width: 860px) { .hero { grid-template-columns: 1fr; } .hero .portrait { height: auto; justify-content: center; } .hero .portrait svg.sketch { width: min(100%, 24rem); height: auto; margin: 0 auto; } }
 .hero { min-height: min(82svh, 900px); gap: 2.5rem; }
 .hero > .stack > p:last-child { font-size: 1.0625rem; }
 @media (max-width: 860px) { .hero { min-height: 0; } }
@@ -438,3 +438,20 @@ html, body { overflow-x: clip; }
 .figures { display: flex; }
 .figures div { flex: 1 1 0; min-width: 0; }
 @media (max-width: 620px) { .figures { flex-wrap: wrap; } .figures div { flex: 1 1 45%; } }
+
+/* the stirred ink shows fully over the paint and fades away under the text */
+
+/* low-power browsers (no WebGL, usually graphics acceleration off): still cover frame instead of the film, the grain holds still */
+html.lowfx .inkbg .grain { animation: none; }
+html.lowfx .inkbg video { display: none; }
+html.lowfx .inkbg img.still { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* the storm on the About page */
+.storm { margin: 0; position: relative; aspect-ratio: 9 / 8; overflow: hidden; -webkit-mask-image: radial-gradient(ellipse 74% 74% at 50% 52%, #000 60%, transparent 100%); mask-image: radial-gradient(ellipse 74% 74% at 50% 52%, #000 60%, transparent 100%); }
+.storm img, .storm canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.storm img { transition: opacity 0.35s ease; }
+.storm canvas { opacity: 0; transition: opacity 0.35s ease; }
+.storm.live img { opacity: 0; }
+.storm.live canvas { opacity: 1; }
+.storm-split { align-items: center; }
+@media (max-width: 860px) { .storm-split .storm { order: -1; } }

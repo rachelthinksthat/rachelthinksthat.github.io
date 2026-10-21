@@ -16,7 +16,7 @@
   }
   var sb = document.createElement('button'); sb.type = 'button';
   function syncSound() { sb.setAttribute('aria-pressed', soundOn); sb.textContent = soundOn ? 'Sound on' : 'Sound off'; }
-  sb.addEventListener('click', function () { soundOn = !soundOn; store.set('rj-sound', soundOn ? 'on' : 'off'); syncSound(); if (soundOn) { audio(); playTurn(); } });
+  sb.addEventListener('click', function () { soundOn = !soundOn; store.set('rj-sound', soundOn ? 'on' : 'off'); syncSound(); if (soundOn) { var a = audio(); playTurn(); setTimeout(function () { if (soundOn && a && a.state !== 'running') sb.textContent = 'Sound blocked'; }, 1200); } });
   syncSound(); controls.appendChild(sb);
   document.body.appendChild(controls);
 
@@ -30,13 +30,36 @@
     var g = a.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + Math.min(0.06, dur * 0.25)); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     s.connect(f); f.connect(g); g.connect(a.destination); s.start(t); s.stop(t + dur + 0.02);
   }
-  /* typewriter key: a short click made in code, one per letter, so it keeps exact pace with the typing */
+  /* typewriter key: a mechanical strike made in code, one per letter so it keeps exact pace with the typing.
+     thump of the key bottoming out + the typebar hitting the platen (filtered noise) + a faint ring, then a softer release */
+  function thump(a, t, f, dur, peak) {
+    var o = a.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 0.45, t + dur);
+    var g = a.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + 0.003); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+  }
   function playKey(ch) {
-    if (!soundOn) return; var a = audio(); if (!a) return; var t = a.currentTime, space = ch === ' ';
-    var o = a.createOscillator(); o.type = 'square'; o.frequency.setValueAtTime(space ? 180 : 1400 + Math.random() * 500, t); o.frequency.exponentialRampToValueAtTime(space ? 90 : 500, t + 0.03);
-    var g = a.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(space ? 0.08 : 0.06, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + (space ? 0.06 : 0.035));
-    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.08);
-    burst(a, t, space ? 0.05 : 0.03, 'highpass', 2500, 4000, space ? 0.05 : 0.09);
+    if (!soundOn) return; var a = audio(); if (!a) return; var t = a.currentTime, space = ch === ' ', v = 0.85 + Math.random() * 0.3;
+    if (space) {
+      thump(a, t, 95, 0.09, 0.5 * v); burst(a, t, 0.06, 'lowpass', 1400, 500, 0.45 * v);
+      burst(a, t + 0.07, 0.03, 'lowpass', 1000, 400, 0.12);
+      return;
+    }
+    thump(a, t, 150 + Math.random() * 40, 0.05, 0.42 * v);
+    burst(a, t, 0.028, 'bandpass', 1900 + Math.random() * 600, 900, 0.7 * v);
+    var r = a.createOscillator(); r.type = 'sine'; r.frequency.setValueAtTime(3200 + Math.random() * 900, t);
+    var rg = a.createGain(); rg.gain.setValueAtTime(0.0001, t); rg.gain.exponentialRampToValueAtTime(0.05 * v, t + 0.002); rg.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
+    r.connect(rg); rg.connect(a.destination); r.start(t); r.stop(t + 0.06);
+    burst(a, t + 0.06, 0.025, 'lowpass', 1200, 500, 0.14);
+  }
+  /* the bell when the line is done */
+  function playBell() {
+    if (!soundOn) return; var a = audio(); if (!a) return; var t = a.currentTime + 0.08;
+    [2480, 3760, 5020].forEach(function (f, i) {
+      var o = a.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f, t);
+      var g = a.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime([0.16, 0.07, 0.03][i], t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9 - i * 0.15);
+      o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 1);
+    });
+    burst(a, t, 0.02, 'highpass', 4000, 6000, 0.12);
   }
   function playTurn() { if (!soundOn) return; var a = audio(); if (!a) return; var t = a.currentTime; burst(a, t + 0.05, 0.62, 'bandpass', 700, 3600, 0.2); burst(a, t + 0.82, 0.14, 'lowpass', 900, 500, 0.16); }
 
@@ -184,8 +207,8 @@
     var head = document.querySelector('.hero, .pagehead'); if (!head) return;
     var h1 = head.querySelector('h1'), lede = head.querySelector('.lede'), after = head.querySelectorAll('.jump');
     if (!h1) return;
-    var key = 'rj-typed:' + location.pathname, seen = false, home = !!document.querySelector('.hero');
-    try { var v = sessionStorage.getItem(key); seen = home ? (v && Date.now() - Number(v) < 20 * 60 * 1000) : v === '1'; } catch (e) {}
+    var key = 'rj-typed:' + location.pathname, seen = false, home = head.classList.contains('hero');
+    try { var v = sessionStorage.getItem(key); seen = home ? (v && Date.now() - Number(v) < 20 * 60 * 1000) : !!v; } catch (e) {}
     if (seen || !motionOn()) return;
     try { sessionStorage.setItem(key, home ? String(Date.now()) : '1'); } catch (e) {}
     var intro = head.querySelector('.hero > .stack > p:not(.label):not(.lede):not(.hint)');
@@ -212,7 +235,7 @@
       if (ci === 0) p.el.appendChild(cursor);
       ci++; p.vis.textContent = p.text.slice(0, ci); playKey(p.text.charAt(ci - 1));
       var ch = p.text.charAt(ci - 1), base = pi === 0 ? 62 : 14, pause = /[.,;:!?]/.test(ch) ? 160 : 0;
-      if (ci >= p.text.length) { pi++; ci = 0; pause = 220; }
+      if (ci >= p.text.length) { pi++; ci = 0; pause = 220; playBell(); }
       twTimer = setTimeout(tick, base + pause);
     }
     twSkip = function () { finish(); };
@@ -230,7 +253,9 @@
     if (heroState || !motionOn()) return;
     var canvas = bg.querySelector('canvas'); if (!canvas) return;
     var gl; try { gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: true }); } catch (e) {}
-    if (!gl || !gl.getExtension('EXT_color_buffer_float')) return;
+    var useGL = !!(gl && gl.getExtension('EXT_color_buffer_float'));
+    document.documentElement.classList.toggle('lowfx', !useGL);
+    if (!useGL && film && !bg.querySelector('img.still')) { film.pause(); var still = document.createElement('img'); still.className = 'still'; still.alt = ''; still.src = film.getAttribute('poster') || ''; bg.insertBefore(still, film); }
 
     var cfg = { SIM: 128, DYE: innerWidth < 760 ? 512 : 900, DENS: 0.55, VEL: 0.25, PRESSURE: 0.8, ITER: 18, CURL: 26, RADIUS: 0.32, FORCE: 5600 };
     var VS = '#version 300 es\nprecision highp float;\nlayout(location=0) in vec2 aPos;\nuniform vec2 texelSize;\nout vec2 vUv; out vec2 vL; out vec2 vR; out vec2 vT; out vec2 vB;\nvoid main(){ vUv=aPos*.5+.5; vL=vUv-vec2(texelSize.x,0.); vR=vUv+vec2(texelSize.x,0.); vT=vUv+vec2(0.,texelSize.y); vB=vUv-vec2(0.,texelSize.y); gl_Position=vec4(aPos,0.,1.); }';
@@ -248,7 +273,7 @@
     };
     function sh(type, src) { var s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
     var P = {};
-    try {
+    if (useGL) try {
       var vs = sh(gl.VERTEX_SHADER, VS);
       Object.keys(FS).forEach(function (k) {
         var p = gl.createProgram(); gl.attachShader(p, vs); gl.attachShader(p, sh(gl.FRAGMENT_SHADER, FH + FS[k])); gl.linkProgram(p);
@@ -258,10 +283,12 @@
         P[k] = { p: p, u: u };
       });
     } catch (e) { return; }
+    if (useGL) {
     var vao = gl.createVertexArray(); gl.bindVertexArray(vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, -1, 1, 1, 1, 1, -1]), gl.STATIC_DRAW);
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer()); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0, 1, 2, 0, 2, 3]), gl.STATIC_DRAW);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0); gl.enableVertexAttribArray(0);
+    }
     function blit(t) { if (t) { gl.viewport(0, 0, t.w, t.h); gl.bindFramebuffer(gl.FRAMEBUFFER, t.fb); } else { gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight); gl.bindFramebuffer(gl.FRAMEBUFFER, null); } gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0); }
     function target(w, h, filter) {
       gl.activeTexture(gl.TEXTURE0); var tex = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -299,9 +326,99 @@
     }
     function render() { var u = use('display'); gl.uniform2f(u.texelSize, 1 / dye.w, 1 / dye.h); gl.uniform1i(u.uTexture, dye.read.attach(0)); gl.clearColor(0, 0, 0, 0); gl.bindFramebuffer(gl.FRAMEBUFFER, null); gl.clear(gl.COLOR_BUFFER_BIT); blit(null); }
 
+    /* fallback: the same stable-fluids idea on a small CPU grid, for browsers without WebGL (Chrome with graphics acceleration off, for one) */
+    function cpuSim() {
+      var ctx = canvas.getContext('2d'); if (!ctx) return null;
+      var W = 0, H = 0, N = 0, DW = 0, DH = 0, DN = 0, u, v, u2, v2, dr, dg, db, dr2, dg2, db2, pr, pr2, dv, img, off, octx;
+      function alloc() {
+        var cw = Math.max(1, canvas.clientWidth), ch = Math.max(1, canvas.clientHeight);
+        var nh = innerWidth < 760 ? 48 : 72, nw = Math.max(16, Math.round(nh * cw / ch));
+        if (nw === W && nh === H) return;
+        W = nw; H = nh; N = W * H; DW = W * 3; DH = H * 3; DN = DW * DH;
+        u = new Float32Array(N); v = new Float32Array(N); u2 = new Float32Array(N); v2 = new Float32Array(N);
+        dr = new Float32Array(DN); dg = new Float32Array(DN); db = new Float32Array(DN); dr2 = new Float32Array(DN); dg2 = new Float32Array(DN); db2 = new Float32Array(DN);
+        pr = new Float32Array(N); pr2 = new Float32Array(N); dv = new Float32Array(N);
+        off = document.createElement('canvas'); off.width = DW; off.height = DH; octx = off.getContext('2d'); img = octx.createImageData(DW, DH);
+      }
+      function resize() { var dpr = Math.min(devicePixelRatio || 1, 1.5), w = Math.max(1, Math.floor(canvas.clientWidth * dpr)), h = Math.max(1, Math.floor(canvas.clientHeight * dpr)); if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; } alloc(); }
+      function sample(a, x, y, w, h) {
+        x = x < 0 ? 0 : x > w - 1.001 ? w - 1.001 : x; y = y < 0 ? 0 : y > h - 1.001 ? h - 1.001 : y;
+        var i = x | 0, j = y | 0, fx = x - i, fy = y - j, k = j * w + i;
+        return (a[k] * (1 - fx) + a[k + 1] * fx) * (1 - fy) + (a[k + w] * (1 - fx) + a[k + w + 1] * fx) * fy;
+      }
+      function splat(x, y, dx, dy, col) {
+        var cx = x * W, cy = (1 - y) * H, rad = Math.sqrt(cfg.RADIUS / 100) * H * 1.15, r2 = rad * rad;
+        var x0 = Math.max(0, Math.floor(cx - rad * 2.5)), x1 = Math.min(W - 1, Math.ceil(cx + rad * 2.5)), y0 = Math.max(0, Math.floor(cy - rad * 2.5)), y1 = Math.min(H - 1, Math.ceil(cy + rad * 2.5));
+        for (var j = y0; j <= y1; j++) for (var i = x0; i <= x1; i++) {
+          var ex = i - cx, ey = j - cy, g = Math.exp(-(ex * ex + ey * ey) / r2), k = j * W + i;
+          u[k] += dx * g; v[k] -= dy * g;
+        }
+        cx *= 3; cy *= 3; rad *= 3; r2 = rad * rad;
+        x0 = Math.max(0, Math.floor(cx - rad * 2.5)); x1 = Math.min(DW - 1, Math.ceil(cx + rad * 2.5)); y0 = Math.max(0, Math.floor(cy - rad * 2.5)); y1 = Math.min(DH - 1, Math.ceil(cy + rad * 2.5));
+        for (j = y0; j <= y1; j++) for (i = x0; i <= x1; i++) {
+          ex = i - cx; ey = j - cy; g = Math.exp(-(ex * ex + ey * ey) / r2); k = j * DW + i;
+          dr[k] += col[0] * g; dg[k] += col[1] * g; db[k] += col[2] * g;
+        }
+      }
+      function step(dt) {
+        var i, j, k, n;
+        /* vorticity confinement, light */
+        for (j = 1; j < H - 1; j++) for (i = 1; i < W - 1; i++) { k = j * W + i; pr2[k] = 0.5 * ((v[k + 1] - v[k - 1]) - (u[k + W] - u[k - W])); }
+        for (j = 2; j < H - 2; j++) for (i = 2; i < W - 2; i++) {
+          k = j * W + i; var fx = Math.abs(pr2[k + W]) - Math.abs(pr2[k - W]), fy = Math.abs(pr2[k + 1]) - Math.abs(pr2[k - 1]), l = Math.sqrt(fx * fx + fy * fy) + 0.0001;
+          fx = fx / l * cfg.CURL * pr2[k]; fy = -fy / l * cfg.CURL * pr2[k]; u[k] += fx * dt * 0.5; v[k] += fy * dt * 0.5;
+        }
+        /* divergence + pressure */
+        for (j = 0; j < H; j++) for (i = 0; i < W; i++) {
+          k = j * W + i;
+          var L = i > 0 ? u[k - 1] : -u[k], R = i < W - 1 ? u[k + 1] : -u[k], T = j > 0 ? v[k - W] : -v[k], B = j < H - 1 ? v[k + W] : -v[k];
+          dv[k] = 0.5 * (R - L + B - T); pr[k] *= cfg.PRESSURE;
+        }
+        for (n = 0; n < cfg.ITER; n++) {
+          for (j = 0; j < H; j++) for (i = 0; i < W; i++) {
+            k = j * W + i;
+            pr2[k] = ((i > 0 ? pr[k - 1] : pr[k]) + (i < W - 1 ? pr[k + 1] : pr[k]) + (j > 0 ? pr[k - W] : pr[k]) + (j < H - 1 ? pr[k + W] : pr[k]) - dv[k]) * 0.25;
+          }
+          var t = pr; pr = pr2; pr2 = t;
+        }
+        for (j = 0; j < H; j++) for (i = 0; i < W; i++) {
+          k = j * W + i;
+          u[k] -= 0.5 * ((i < W - 1 ? pr[k + 1] : pr[k]) - (i > 0 ? pr[k - 1] : pr[k]));
+          v[k] -= 0.5 * ((j < H - 1 ? pr[k + W] : pr[k]) - (j > 0 ? pr[k - W] : pr[k]));
+        }
+        /* advect */
+        var kv = 1 / (1 + cfg.VEL * dt), kd = 1 / (1 + cfg.DENS * dt);
+        for (j = 0; j < H; j++) for (i = 0; i < W; i++) {
+          k = j * W + i; var x = i - dt * u[k], y = j - dt * v[k];
+          u2[k] = sample(u, x, y, W, H) * kv; v2[k] = sample(v, x, y, W, H) * kv;
+        }
+        for (j = 0; j < DH; j++) for (i = 0; i < DW; i++) {
+          k = j * DW + i; var vx = sample(u2, i / 3, j / 3, W, H), vy = sample(v2, i / 3, j / 3, W, H), x = i - dt * vx * 3, y = j - dt * vy * 3;
+          dr2[k] = sample(dr, x, y, DW, DH) * kd; dg2[k] = sample(dg, x, y, DW, DH) * kd; db2[k] = sample(db, x, y, DW, DH) * kd;
+        }
+        var s; s = u; u = u2; u2 = s; s = v; v = v2; v2 = s; s = dr; dr = dr2; dr2 = s; s = dg; dg = dg2; dg2 = s; s = db; db = db2; db2 = s;
+      }
+      function render() {
+        var d = img.data, k, o;
+        for (k = 0, o = 0; k < DN; k++, o += 4) {
+          var r = dr[k], g = dg[k], b = db[k], m = r > g ? (r > b ? r : b) : (g > b ? g : b);
+          if (m < 0.002) { d[o + 3] = 0; continue; }
+          var a = (1 - Math.exp(-m * 2.4)) * 0.88, inv = 255 / m;
+          d[o] = r * inv; d[o + 1] = g * inv; d[o + 2] = b * inv; d[o + 3] = a * 255;
+        }
+        octx.putImageData(img, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
+      }
+      alloc();
+      return { splat: splat, step: step, render: render, resize: resize };
+    }
+    var S = useGL ? { splat: splat, step: step, render: render, resize: function () { if (sizeCanvas()) buffers(); } } : cpuSim();
+    if (!S) return;
+
     var inks = [[0.66, 0.12, 0.33], [0.91, 0.36, 0.55], [0.85, 0.62, 0.16], [0.95, 0.55, 0.66], [0.58, 0.1, 0.3]];
     var inkIndex = 0, inkSwap = 0, pending = [], last = null, activeUntil = 0, raf = 0, prev = 0, visible = true, alive = true;
-    sizeCanvas(); buffers();
+    S.resize();
     function onMove(e) {
       if (e.pointerType !== 'mouse' && !e.isPrimary) return;
       var r = canvas.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = 1 - (e.clientY - r.top) / r.height;
@@ -310,7 +427,7 @@
     }
     function onLeave() { last = null; }
     function onDown(e) { var r = canvas.getBoundingClientRect(), x = (e.clientX - r.left) / r.width, y = 1 - (e.clientY - r.top) / r.height; for (var i = 0; i < 3; i++) { var a = Math.random() * Math.PI * 2; pending.push([x, y, Math.cos(a) * 700, Math.sin(a) * 700, 2.2]); } last = { x: x, y: y }; wake(); }
-    function onResize() { if (sizeCanvas()) { buffers(); render(); } }
+    function onResize() { S.resize(); S.render(); }
     function onVis() { if (!document.hidden) wake(); }
     hero.addEventListener('pointermove', onMove, { passive: true }); hero.addEventListener('pointerleave', onLeave); hero.addEventListener('pointerdown', onDown, { passive: true });
     addEventListener('resize', onResize); document.addEventListener('visibilitychange', onVis);
@@ -319,11 +436,11 @@
     function frame(now) {
       raf = 0; if (!alive) return;
       var dt = Math.min((now - prev) / 1000, 0.033); prev = now;
-      if (sizeCanvas()) buffers();
+      S.resize();
       if (now - inkSwap > 900) { inkIndex = (inkIndex + 1) % inks.length; inkSwap = now; }
-      pending.forEach(function (s) { var k = inks[inkIndex], m = 0.32 * (s[4] || 1); splat(s[0], s[1], s[2], s[3], [k[0] * m, k[1] * m, k[2] * m]); });
+      pending.forEach(function (s) { var k = inks[inkIndex], m = 0.32 * (s[4] || 1); S.splat(s[0], s[1], s[2], s[3], [k[0] * m, k[1] * m, k[2] * m]); });
       pending = [];
-      step(dt); render();
+      S.step(dt); S.render();
       if (now < activeUntil && visible && !document.hidden) raf = requestAnimationFrame(frame);
     }
     /* a first stir so the cover is never blank before anyone moves */
