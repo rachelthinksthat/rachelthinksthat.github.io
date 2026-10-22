@@ -218,7 +218,7 @@
       var n = document.createElement('script'); n.textContent = s.textContent; try { document.body.appendChild(n); n.remove(); } catch (e) {}
     });
     if (hash) { var t = document.querySelector(hash); if (t) t.scrollIntoView(); else scrollTo(0, 0); } else scrollTo(0, 0);
-    initHero(); initTypewriter();
+    initMenu(); initHero(); initTypewriter();
   }
 
 
@@ -475,5 +475,30 @@
     wake();
     heroState = { stop: function () { alive = false; if (raf) cancelAnimationFrame(raf); hero.removeEventListener('pointermove', onMove); hero.removeEventListener('pointerleave', onLeave); hero.removeEventListener('pointerdown', onDown); removeEventListener('resize', onResize); document.removeEventListener('visibilitychange', onVis); io.disconnect(); } };
   }
-  initHero(); initTypewriter();
+
+  /* ---- phone menu: a three-line button that folds the page links into a drop-down ---- */
+  function initMenu() {
+    var top = document.querySelector('header.top'); if (!top) return;
+    var wrap = top.querySelector('.wrap'), nav = top.querySelector('.tabs');
+    if (!wrap || !nav || top.querySelector('.menu-toggle')) return;
+    nav.id = nav.id || 'site-menu';
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'menu-toggle';
+    btn.setAttribute('aria-controls', nav.id); btn.setAttribute('aria-expanded', 'false'); btn.setAttribute('aria-label', 'Menu');
+    btn.innerHTML = '<span></span><span></span><span></span>';
+    wrap.insertBefore(btn, nav);
+  }
+  function setMenu(open) {
+    var top = document.querySelector('header.top'), btn = top && top.querySelector('.menu-toggle'); if (!btn) return;
+    top.classList.toggle('menu-open', open); btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.setAttribute('aria-label', open ? 'Close menu' : 'Menu');
+  }
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest && e.target.closest('.menu-toggle');
+    if (btn) { setMenu(btn.getAttribute('aria-expanded') !== 'true'); return; }
+    var top = document.querySelector('header.top.menu-open');
+    if (top && (!top.contains(e.target) || e.target.closest('.tabs a'))) setMenu(false);
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
+  initMenu(); initHero(); initTypewriter();
 })();

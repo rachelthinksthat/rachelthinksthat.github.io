@@ -455,3 +455,34 @@ html.lowfx .inkbg img.still { position: absolute; inset: 0; width: 100%; height:
 .storm.live canvas { opacity: 1; }
 .storm-split { align-items: center; }
 @media (max-width: 860px) { .storm-split .storm { order: -1; } }
+
+/* phones: the page links fold into a three-line menu */
+.menu-toggle { display: none; }
+@media (max-width: 720px) {
+  .top .wrap { flex-wrap: nowrap; position: relative; }
+  .top .name { padding-block: 0.95rem; }
+  .menu-toggle { display: inline-flex; flex-direction: column; justify-content: center; gap: 5px; width: 44px; height: 44px; margin-right: -10px; padding: 0 11px; border: 0; background: transparent; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .menu-toggle span { display: block; height: 1.5px; width: 22px; background: currentColor; border-radius: 2px; transition: transform 0.3s ease, opacity 0.2s ease; }
+  .top.menu-open .menu-toggle span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+  .top.menu-open .menu-toggle span:nth-child(2) { opacity: 0; }
+  .top.menu-open .menu-toggle span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+  .top .tabs { position: absolute; top: 100%; left: -1.25rem; right: -1.25rem; display: flex; flex-direction: column; gap: 0; padding: 0.3rem 1.25rem 0.9rem; background: var(--paper); border-bottom: 1px solid var(--rule); box-shadow: 0 14px 24px -18px rgba(58, 19, 38, 0.45); visibility: hidden; opacity: 0; transform: translateY(-6px); transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s linear 0.22s; }
+  .top.menu-open .tabs { visibility: visible; opacity: 1; transform: none; transition: opacity 0.22s ease, transform 0.22s ease, visibility 0s; }
+  .top .tabs a { font-size: 0.8rem; letter-spacing: 0.16em; padding-block: 0.95rem; border-bottom: 1px solid var(--rule); }
+  .top .tabs a:last-child { border-bottom: 0; }
+  .top .tabs a[aria-current="page"] { border-bottom-color: var(--rule); }
+}
+
+/* phones: carousel titles get their own line, with the count and arrows underneath */
+@media (max-width: 620px) {
+  .rail-head { grid-template-columns: 1fr; align-items: start; gap: 0.7rem; }
+  .rail-head h2 { font-size: clamp(1.55rem, 7vw, 1.9rem); line-height: 1.12; }
+  .rail-nav { justify-content: space-between; }
+  .rail-nav .rail-count { margin-right: auto; }
+}
+
+/* phones: the drawing leans left inside its frame, so nudge it to sit in the middle of the screen */
+@media (max-width: 860px) {
+  .hero .portrait { max-width: none; overflow: visible; }
+  .hero .portrait svg.sketch { transform: translateX(7%) scale(0.88); transform-origin: 50% 0; margin-top: -13%; margin-bottom: -22%; }
+}
