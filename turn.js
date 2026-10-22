@@ -113,7 +113,10 @@
     if (u.pathname === location.pathname) { if (u.hash) return; e.preventDefault(); scrollTo({ top: 0, behavior: motionOn() ? 'smooth' : 'auto' }); return; }
     e.preventDefault(); go(u.href, true, null);
   });
-  addEventListener('popstate', function () { go(location.href, false, null); });
+  /* the browser's back button always turns back from the left; its forward button turns forward from the right */
+  var histIdx = (history.state && history.state.rjIdx) || 0;
+  try { history.replaceState({ rjIdx: histIdx }, ''); } catch (e) {}
+  addEventListener('popstate', function (e) { var i = (e.state && e.state.rjIdx) || 0, fwd = i > histIdx; histIdx = i; go(location.href, false, fwd); });
 
   /* which way the page turns: by where each page sits in the menu (Home, Campaigns, Publishing, Research, Creative Writing, About).
      Moving right along the menu turns forward from the right edge; moving left turns back from the left edge.
@@ -137,7 +140,7 @@
       var toPath = new URL(href, location.href).pathname;
       if (forward == null) forward = pageRank(doc, toPath) >= pageRank(document, herePath);
       herePath = toPath;
-      if (push) { try { history.pushState(null, '', href); } catch (e) {} }
+      if (push) { try { history.pushState({ rjIdx: ++histIdx }, '', href); } catch (e) {} }
       if (!motionOn()) { swap(doc); busy = false; return; }
       var hash = href.indexOf('#') > -1 ? href.slice(href.indexOf('#')) : '';
       playTurn();
