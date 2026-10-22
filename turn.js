@@ -22,7 +22,16 @@
 
   /* ---- page-turn sound, made in code ---- */
   var actx = null;
-  function audio() { if (!actx) { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; actx = new AC(); } if (actx.state === 'suspended') actx.resume(); return actx; }
+  function audio() { if (!actx) { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; actx = new AC(); loadKeys(actx); } if (actx.state === 'suspended') actx.resume(); return actx; }
+  /* recorded typewriter keys: 12 strikes cut from a real typewriter recording, each in its own 0.2s slot of one small file */
+  var keyBuf = null, keyLoading = false, keyFailed = false, lastKey = -1;
+  function loadKeys(a) {
+    if (keyBuf || keyLoading || !a || !window.fetch) { if (!window.fetch) keyFailed = true; return; } keyLoading = true;
+    fetch('/audio/typewriter-keys.mp3').then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(function (b) { return new Promise(function (ok, no) { a.decodeAudioData(b, ok, no); }); })
+      .then(function (buf) { keyBuf = buf; }).catch(function () { keyFailed = true; });
+  }
+  if (soundOn) audio();  /* start loading the keys before the headline types */
   function noise(a, dur) { var b = a.createBuffer(1, Math.floor(a.sampleRate * dur), a.sampleRate), d = b.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; }
   function burst(a, t, dur, type, f0, f1, peak) {
     var s = a.createBufferSource(); s.buffer = noise(a, dur);
@@ -38,7 +47,19 @@
     o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
   }
   function playKey(ch) {
-    if (!soundOn) return; var a = audio(); if (!a) return; var t = a.currentTime, space = ch === ' ', v = 0.85 + Math.random() * 0.3;
+    if (!soundOn) return; var a = audio(); if (!a) return;
+    if (keyBuf) {
+      var n = Math.round(keyBuf.duration / 0.2), k = Math.floor(Math.random() * n), sp = ch === ' ';
+      if (k === lastKey) k = (k + 1) % n; lastKey = k;
+      var src = a.createBufferSource(); src.buffer = keyBuf; src.playbackRate.value = sp ? 0.8 : 0.96 + Math.random() * 0.08;
+      var kg = a.createGain(); kg.gain.value = (sp ? 0.45 : 0.6) * (0.85 + Math.random() * 0.3);
+      src.connect(kg); kg.connect(a.destination); src.start(a.currentTime, k * 0.2, 0.19);
+      return;
+    }
+    if (keyFailed) synthKey(a, ch);
+  }
+  function synthKey(a, ch) {
+    var t = a.currentTime, space = ch === ' ', v = 0.85 + Math.random() * 0.3;
     if (space) {
       thump(a, t, 95, 0.09, 0.5 * v); burst(a, t, 0.06, 'lowpass', 1400, 500, 0.45 * v);
       burst(a, t + 0.07, 0.03, 'lowpass', 1000, 400, 0.12);
@@ -222,7 +243,7 @@
     });
     after.forEach(function (n) { n.classList.add('tw-wait'); });
     var cursor = document.createElement('span'); cursor.className = 'tw-cursor'; cursor.setAttribute('aria-hidden', 'true');
-    var pi = 0, ci = 0;
+    var pi = 0, ci = 0, kw = 0;
     function finish() {
       stopTypewriter();
       parts.forEach(function (p) { p.vis.textContent = p.text; });
@@ -232,6 +253,7 @@
     function tick() {
       var p = parts[pi];
       if (!p) { finish(); return; }
+      if (pi === 0 && ci === 0 && soundOn && !keyBuf && !keyFailed && kw < 16) { kw++; twTimer = setTimeout(tick, 50); return; }  /* give the key sounds up to 0.8s to load */
       if (ci === 0) p.el.appendChild(cursor);
       ci++; p.vis.textContent = p.text.slice(0, ci); playKey(p.text.charAt(ci - 1));
       var ch = p.text.charAt(ci - 1), base = pi === 0 ? 62 : 14, pause = /[.,;:!?]/.test(ch) ? 160 : 0;
