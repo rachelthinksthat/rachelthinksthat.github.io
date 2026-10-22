@@ -111,15 +111,32 @@
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     var a = e.target.closest('a'); var u = sameSitePage(a); if (!u) return;
     if (u.pathname === location.pathname) { if (u.hash) return; e.preventDefault(); scrollTo({ top: 0, behavior: motionOn() ? 'smooth' : 'auto' }); return; }
-    e.preventDefault(); go(u.href, true, !/index\.html$|\/$/.test(u.pathname));
+    e.preventDefault(); go(u.href, true, null);
   });
-  addEventListener('popstate', function () { go(location.href, false, false); });
+  addEventListener('popstate', function () { go(location.href, false, null); });
+
+  /* which way the page turns: by where each page sits in the menu (Home, Campaigns, Publishing, Research, Creative Writing, About).
+     Moving right along the menu turns forward from the right edge; moving left turns back from the left edge.
+     A case study sits just after its own section, found from its back link. */
+  var herePath = location.pathname;
+  function normPath(p) { return /\/$/.test(p) ? p + 'index.html' : p; }
+  function pageRank(doc, path) {
+    var order = [], links = document.querySelectorAll('nav.tabs a[href]');
+    for (var i = 0; i < links.length; i++) { var lp = normPath(new URL(links[i].getAttribute('href'), location.href).pathname); if (order.indexOf(lp) < 0) order.push(lp); }
+    var r = order.indexOf(normPath(path)); if (r > -1) return r;
+    var back = doc && doc.querySelector('a.back[href]');
+    if (back) { r = order.indexOf(normPath(new URL(back.getAttribute('href'), location.href).pathname)); if (r > -1) return r + 0.5; }
+    return order.length;
+  }
 
   function go(href, push, forward) {
     if (busy) return; busy = true;
     fetch(href, { credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(function (html) {
       var doc = new DOMParser().parseFromString(html, 'text/html');
       var target = doc.querySelector('main'); if (!target) throw new Error('no main');
+      var toPath = new URL(href, location.href).pathname;
+      if (forward == null) forward = pageRank(doc, toPath) >= pageRank(document, herePath);
+      herePath = toPath;
       if (push) { try { history.pushState(null, '', href); } catch (e) {} }
       if (!motionOn()) { swap(doc); busy = false; return; }
       var hash = href.indexOf('#') > -1 ? href.slice(href.indexOf('#')) : '';
@@ -156,7 +173,7 @@
     snap.style.paddingInline = getComputedStyle(document.body).paddingInline;
     return snap;
   }
-  /* a Kindle-style peel: the page lifts from its right edge and curls away to the left; going back it unpeels from the left */
+  /* a Kindle-style peel: going forward the page lifts from its right edge and curls away to the left; going back it unpeels from the left */
   function buildPeel() {
     var layer = document.createElement('div'); layer.className = 'page-peel';
     var page = document.createElement('div'); page.className = 'peel-page'; page.appendChild(snapshotBody());
