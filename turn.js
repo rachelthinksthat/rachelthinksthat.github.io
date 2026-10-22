@@ -23,13 +23,17 @@
   /* ---- page-turn sound, made in code ---- */
   var actx = null;
   function audio() { if (!actx) { var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; actx = new AC(); loadKeys(actx); } if (actx.state === 'suspended') actx.resume(); return actx; }
-  /* recorded typewriter keys: 12 strikes cut from a real typewriter recording, each in its own 0.2s slot of one small file */
-  var keyBuf = null, keyLoading = false, keyFailed = false, lastKey = -1;
+  /* recorded typewriter keys: 8 strikes cut from a real typewriter recording, each in its own 0.2s slot of one small file */
+  var keyBuf = null, keyLoading = false, keyFailed = false, lastKey = -1, bellBuf = null;
   function loadKeys(a) {
     if (keyBuf || keyLoading || !a || !window.fetch) { if (!window.fetch) keyFailed = true; return; } keyLoading = true;
     fetch('/audio/typewriter-keys.mp3').then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
       .then(function (b) { return new Promise(function (ok, no) { a.decodeAudioData(b, ok, no); }); })
       .then(function (buf) { keyBuf = buf; }).catch(function () { keyFailed = true; });
+    /* the bell and carriage return, from a second typewriter recording */
+    fetch('/audio/typewriter-bell.mp3').then(function (r) { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(function (b) { return new Promise(function (ok, no) { a.decodeAudioData(b, ok, no); }); })
+      .then(function (buf) { bellBuf = buf; }).catch(function () {});
   }
   if (soundOn) audio();  /* start loading the keys before the headline types */
   function noise(a, dur) { var b = a.createBuffer(1, Math.floor(a.sampleRate * dur), a.sampleRate), d = b.getChannelData(0); for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; return b; }
@@ -75,6 +79,7 @@
   /* the bell when the line is done */
   function playBell() {
     if (!soundOn) return; var a = audio(); if (!a) return; var t = a.currentTime + 0.08;
+    if (bellBuf) { var bs = a.createBufferSource(); bs.buffer = bellBuf; var bg = a.createGain(); bg.gain.value = 0.55; bs.connect(bg); bg.connect(a.destination); bs.start(a.currentTime + 0.03); return; }
     [2480, 3760, 5020].forEach(function (f, i) {
       var o = a.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f, t);
       var g = a.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime([0.16, 0.07, 0.03][i], t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9 - i * 0.15);
